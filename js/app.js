@@ -206,6 +206,17 @@ function setPlayerName(name) {
   localStorage.setItem('vygotsky_player_name', name);
   elements.headerPlayerName.textContent = name;
   elements.headerPlayerPill.style.display = 'flex';
+  elements.headerPlayerPill.title = "Clique para trocar de jogador";
+  elements.headerPlayerPill.style.cursor = "pointer";
+
+  if (!elements.headerPlayerPill.dataset.hasListener) {
+    elements.headerPlayerPill.addEventListener('click', () => {
+      if (confirm(`Deseja alterar o jogador atual ("${state.playerName}")?`)) {
+        switchScreen('welcome-screen');
+      }
+    });
+    elements.headerPlayerPill.dataset.hasListener = "true";
+  }
 }
 
 function checkSavedPlayer() {
