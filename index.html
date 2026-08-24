@@ -16,6 +16,9 @@
 </head>
 <body>
 
+  <!-- Canvas Overlay para Animação de Confetes -->
+  <canvas id="confetti-canvas"></canvas>
+
   <!-- Brilhos Decorativos de Fundo -->
   <div class="bg-glow-1"></div>
   <div class="bg-glow-2"></div>
@@ -32,10 +35,17 @@
         </div>
       </div>
 
-      <!-- Badge de Identificação do Jogador (Escondido inicialmente) -->
-      <div id="header-player-pill" class="player-info-pill" style="display: none;">
-        <span>👤</span>
-        <span id="header-player-name">Jogador</span>
+      <div style="display: flex; align-items: center; gap: 0.8rem;">
+        <!-- Botão Mute / Unmute Som -->
+        <button id="btn-toggle-sound" class="btn-mute-toggle" title="Ativar/Desativar Efeitos Sonoros" aria-label="Alternar som">
+          <span>🔊</span> <span id="sound-btn-text">Som Ligado</span>
+        </button>
+
+        <!-- Badge de Identificação do Jogador (Escondido inicialmente) -->
+        <div id="header-player-pill" class="player-info-pill" style="display: none;">
+          <span>👤</span>
+          <span id="header-player-name">Jogador</span>
+        </div>
       </div>
     </header>
 
@@ -221,14 +231,24 @@
            =================================================================== -->
       <section id="quiz-screen" class="screen">
         <div class="quiz-topbar">
-          <span id="quiz-question-number" style="font-weight: 700; color: var(--text-muted);">Questão 1/5</span>
+          <span id="quiz-question-number" style="font-weight: 700; color: var(--text-muted);">Questão 1/6</span>
+          <div class="timer-container">
+            <span>⏱️ Tempo:</span>
+            <span id="timer-display" style="color: var(--accent-cyan);">20s</span>
+          </div>
           <div id="quiz-score-pill" class="quiz-score-pill">
             ⭐ 0 pts
           </div>
         </div>
 
+        <!-- Barra de Progresso do Quiz -->
         <div class="quiz-progress-bar">
           <div id="quiz-progress-fill" class="quiz-progress-fill"></div>
+        </div>
+
+        <!-- Barra do Temporizador Regressivo -->
+        <div class="question-timer-bar">
+          <div id="question-timer-fill" class="question-timer-fill"></div>
         </div>
 
         <div class="glass-card quiz-card">
@@ -274,8 +294,18 @@
               <div class="stat-label">Precisão de Acertos</div>
             </div>
             <div class="stat-card">
-              <div id="result-correct-count" class="stat-value">0/5</div>
+              <div id="result-correct-count" class="stat-value">0/6</div>
               <div class="stat-label">Questões Corretas</div>
+            </div>
+          </div>
+
+          <!-- Relatório Pedagógico de Desempenho por Tema -->
+          <div class="pedagogical-report-box">
+            <div class="report-title">
+              <span>📊</span> Relatório Pedagógico de Desempenho
+            </div>
+            <div id="report-list-container" class="report-list">
+              <!-- Preenchido via JS -->
             </div>
           </div>
 
@@ -285,12 +315,17 @@
           </div>
 
           <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem;">
+            <!-- Botão de Emissão de Certificado -->
+            <button id="btn-open-certificate" class="btn btn-accent btn-full" style="font-size: 1.1rem; background: linear-gradient(135deg, var(--accent-amber), #d97706);">
+              📜 Emitir Certificado Acadêmico Digital
+            </button>
+
             <button id="btn-view-ranking-from-result" class="btn btn-primary btn-full">
               🏆 Ver Ranking dos Jogadores
             </button>
             
             <div style="display: flex; gap: 0.8rem;">
-              <button id="btn-restart-quiz" class="btn btn-accent" style="flex: 1;">
+              <button id="btn-restart-quiz" class="btn btn-secondary" style="flex: 1;">
                 🔄 Tentar Novamente
               </button>
               <button id="btn-return-menu-from-result" class="btn btn-secondary" style="flex: 1;">
@@ -329,6 +364,12 @@
           <div id="ranking-list-container" class="leaderboard-list">
             <!-- Carregado via JS -->
           </div>
+
+          <button id="btn-back-to-menu-from-ranking" class="btn btn-secondary btn-full">
+            ⬅️ Voltar ao Menu Principal
+          </button>
+        </div>
+      </section>
 
       <!-- ===================================================================
            7. TELA DE AJUDA & INSTRUÇÕES (HELP SCREEN)
@@ -417,6 +458,41 @@
       </p>
     </footer>
 
+  </div>
+
+  <!-- Modal de Certificado Acadêmico Digital -->
+  <div id="certificate-modal" class="certificate-modal-overlay">
+    <div class="certificate-paper">
+      <div class="certificate-seal">🎓</div>
+      <h2 class="certificate-header-title">Certificado de Desempenho</h2>
+      <div class="certificate-sub">Estudos em Psicologia & Educação Especial</div>
+
+      <p class="certificate-body-text">
+        Certificamos que o(a) estudante e pesquisador(a)<br>
+        <span id="cert-player-name" class="certificate-player-highlight">Nome do Jogador</span><br>
+        concluiu com êxito a avaliação interativa sobre a <strong>Teoria Defectológica de Lev Vygotsky</strong>, alcançando a pontuação de <strong id="cert-player-score" style="color: var(--accent-amber);">0 pts</strong> com precisão de <strong id="cert-player-accuracy" style="color: var(--accent-emerald);">0%</strong>.
+      </p>
+
+      <div class="certificate-footer-info">
+        <div>
+          <strong>Data de Emissão:</strong><br>
+          <span id="cert-date">24/08/2026</span>
+        </div>
+        <div>
+          <strong>Validação Acadêmica:</strong><br>
+          <span>Vygotsky & Defectologia App</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button id="btn-print-certificate" class="btn btn-primary" style="flex: 1;">
+          🖨️ Imprimir / Salvar PDF
+        </button>
+        <button id="btn-close-certificate" class="btn btn-secondary" style="flex: 1;">
+          ❌ Fechar
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Widget de Acessibilidade VLibras (Tradução em LIBRAS) -->

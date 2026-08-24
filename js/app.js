@@ -14,19 +14,23 @@ import {
 const state = {
   playerName: '',
   currentScreen: 'welcome-screen',
+  isMuted: false,
   
   // Estado Flashcards
   flashcardIndex: 0,
   isCardFlipped: false,
 
-  // Estado Quiz
+  // Estado Quiz & Temporizador
   quizIndex: 0,
   score: 0,
   correctAnswersCount: 0,
   streak: 0,
   selectedOption: null,
   isAnswered: false,
-  questions: []
+  questions: [],
+  userAnswers: [], // Histórico pedagógico { question, selected, correct, isCorrect }
+  timeLeft: 20,
+  timerInterval: null
 };
 
 // Referências aos elementos DOM
@@ -229,9 +233,11 @@ function switchScreen(screenId) {
 const masteredCards = new Set();
 
 /* ==========================================================================
-   EFEITOS SONOROS (WEB AUDIO API SINTETIZADA) & ACESSIBILIDADE DE VOZ (WEB SPEECH API)
+   EFEITOS SONOROS, MUTE & ACESSIBILIDADE DE VOZ
    ========================================================================== */
 function playSynthesizedSound(type) {
+  if (state.isMuted) return;
+
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
@@ -249,7 +255,7 @@ function playSynthesizedSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
       osc.start();
       osc.stop(ctx.currentTime + 0.12);
-    } else if (type === 'master') {
+    } else if (type === 'master' || type === 'correct') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(523.25, ctx.currentTime); // Do
       osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08); // Mi
@@ -259,11 +265,42 @@ function playSynthesizedSound(type) {
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
       osc.start();
       osc.stop(ctx.currentTime + 0.4);
+    } else if (type === 'wrong') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(220, ctx.currentTime);
+      osc.frequency.setValueAtTime(180, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
     }
   } catch (e) {
-    // Ignora em navegadores sem suporte audioCtx
+    // Fallback
   }
 }
+
+// Botão Mute / Unmute
+document.addEventListener('DOMContentLoaded', () => {
+  const btnToggleSound = document.getElementById('btn-toggle-sound');
+  const soundBtnText = document.getElementById('sound-btn-text');
+  if (btnToggleSound) {
+    btnToggleSound.addEventListener('click', () => {
+      state.isMuted = !state.isMuted;
+      btnToggleSound.classList.toggle('muted', state.isMuted);
+      if (soundBtnText) soundBtnText.textContent = state.isMuted ? 'Som Desligado' : 'Som Ligado';
+    });
+  }
+
+  // Eventos do Certificado Modal
+  const btnOpenCert = document.getElementById('btn-open-certificate');
+  const btnCloseCert = document.getElementById('btn-close-certificate');
+  const btnPrintCert = document.getElementById('btn-print-certificate');
+  const certModal = document.getElementById('certificate-modal');
+
+  if (btnOpenCert) btnOpenCert.addEventListener('click', openCertificateModal);
+  if (btnCloseCert) btnCloseCert.addEventListener('click', () => certModal.classList.remove('active'));
+  if (btnPrintCert) btnPrintCert.addEventListener('click', () => window.print());
+});
 
 function speakCurrentCardText() {
   if (!('speechSynthesis' in window)) {
@@ -289,10 +326,10 @@ function speakCurrentCardText() {
    MODO ESTUDO - FLASHCARDS LÚDICOS & ACESSÍVEIS
    ========================================================================== */
 function startStudyMode() {
+  stopTimer();
   state.flashcardIndex = 0;
   state.isCardFlipped = false;
   
-  // Conecta ouvintes dos novos botões lúdicos se não foram conectados
   const btnSpeak = document.getElementById('btn-speak-card');
   if (btnSpeak && !btnSpeak.dataset.hasListener) {
     btnSpeak.addEventListener('click', (e) => {
@@ -320,7 +357,6 @@ function renderFlashcard() {
   state.isCardFlipped = false;
   elements.flashcardWrapper.classList.remove('flipped');
 
-  // Atualiza emojis e bordas dinâmicas por cartão
   const emojiFront = document.getElementById('card-emoji-front');
   const emojiBack = document.getElementById('card-emoji-back');
   if (emojiFront) emojiFront.textContent = card.emoji || '🧠';
@@ -331,7 +367,6 @@ function renderFlashcard() {
   if (faceFront && card.color) faceFront.style.borderTopColor = card.color;
   if (faceBack && card.color) faceBack.style.borderTopColor = card.color;
 
-  // Atualiza conteúdo de texto
   elements.cardCategory.textContent = card.category;
   elements.cardTitleFront.textContent = card.titulo;
   elements.cardTextFront.textContent = card.frente;
@@ -341,10 +376,8 @@ function renderFlashcard() {
 
   elements.cardCounter.textContent = `${state.flashcardIndex + 1} / ${flashcardsData.length}`;
 
-  // Atualiza badge e botão de cartão dominado
   updateMasteredUI();
 
-  // Botões de navegação
   elements.btnPrevCard.disabled = state.flashcardIndex === 0;
   elements.btnNextCard.disabled = state.flashcardIndex === flashcardsData.length - 1;
 }
@@ -395,14 +428,15 @@ function navigateFlashcard(direction) {
 }
 
 /* ==========================================================================
-   MODO DESAFIO - QUIZ
+   MODO DESAFIO - QUIZ & TEMPORIZADOR
    ========================================================================== */
 function startQuizMode() {
+  stopTimer();
   state.quizIndex = 0;
   state.score = 0;
   state.correctAnswersCount = 0;
   state.streak = 0;
-  // Embaralha as perguntas para variabilidade
+  state.userAnswers = [];
   state.questions = [...quizQuestions].sort(() => Math.random() - 0.5);
 
   renderQuizQuestion();
@@ -416,17 +450,14 @@ function renderQuizQuestion() {
   const currentQ = state.questions[state.quizIndex];
   const totalQ = state.questions.length;
 
-  // Atualiza progresso e textos
   elements.quizQuestionNumber.textContent = `${state.quizIndex + 1}/${totalQ}`;
   elements.quizScorePill.textContent = `⭐ ${state.score} pts`;
   elements.quizProgressFill.style.width = `${((state.quizIndex + 1) / totalQ) * 100}%`;
   elements.quizQuestionText.textContent = currentQ.pergunta;
 
-  // Limpa e esconde caixa de explicação
   elements.explanationBox.style.display = 'none';
   elements.btnNextQuestion.style.display = 'none';
 
-  // Renderiza opções de resposta
   elements.optionsGrid.innerHTML = '';
   const letters = ['A', 'B', 'C', 'D'];
 
@@ -443,45 +474,117 @@ function renderQuizQuestion() {
     btn.addEventListener('click', () => handleOptionClick(index, btn));
     elements.optionsGrid.appendChild(btn);
   });
+
+  startTimer();
+}
+
+/* Temporizador Regressivo de 20 Segundos */
+function startTimer() {
+  stopTimer();
+  state.timeLeft = 20;
+  updateTimerUI();
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    updateTimerUI();
+
+    if (state.timeLeft <= 0) {
+      stopTimer();
+      handleTimeOut();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (state.timerInterval) {
+    clearInterval(state.timerInterval);
+    state.timerInterval = null;
+  }
+}
+
+function updateTimerUI() {
+  const timerDisplay = document.getElementById('timer-display');
+  const timerFill = document.getElementById('question-timer-fill');
+
+  if (timerDisplay) timerDisplay.textContent = `${state.timeLeft}s`;
+  if (timerFill) {
+    const pct = (state.timeLeft / 20) * 100;
+    timerFill.style.width = `${pct}%`;
+    timerFill.classList.toggle('warning', state.timeLeft <= 5);
+  }
+}
+
+function handleTimeOut() {
+  if (state.isAnswered) return;
+  state.isAnswered = true;
+
+  const currentQ = state.questions[state.quizIndex];
+  state.userAnswers.push({
+    question: currentQ.pergunta,
+    isCorrect: false
+  });
+
+  const optionBtns = elements.optionsGrid.querySelectorAll('.option-btn');
+  optionBtns.forEach(btn => btn.disabled = true);
+
+  state.streak = 0;
+  playSynthesizedSound('wrong');
+
+  const correctBtn = elements.optionsGrid.querySelector(`[data-index="${currentQ.correta}"]`);
+  if (correctBtn) correctBtn.classList.add('correct');
+
+  elements.explanationText.textContent = `⏱️ Tempo esgotado! ${currentQ.explicacao}`;
+  elements.explanationBox.style.display = 'block';
+
+  if (state.quizIndex < state.questions.length - 1) {
+    elements.btnNextQuestion.textContent = "Próxima Pergunta ➔";
+  } else {
+    elements.btnNextQuestion.textContent = "Ver Resultado Final 🏆";
+  }
+  elements.btnNextQuestion.style.display = 'inline-flex';
 }
 
 function handleOptionClick(selectedIndex, clickedBtn) {
   if (state.isAnswered) return;
   state.isAnswered = true;
+  stopTimer();
 
   const currentQ = state.questions[state.quizIndex];
   const isCorrect = selectedIndex === currentQ.correta;
 
-  const optionBtns = elements.optionsGrid.querySelectorAll('.option-btn');
+  state.userAnswers.push({
+    question: currentQ.pergunta,
+    isCorrect: isCorrect
+  });
 
-  // Trava todos os botões
+  const optionBtns = elements.optionsGrid.querySelectorAll('.option-btn');
   optionBtns.forEach(btn => btn.disabled = true);
 
   if (isCorrect) {
     clickedBtn.classList.add('correct');
     state.streak++;
     state.correctAnswersCount++;
+    playSynthesizedSound('correct');
     
-    // Pontuação base 200 + Bônus de Combo (50 pts por acerto seguido)
-    const pointsGained = 200 + (state.streak * 50);
+    // Pontuação base 200 + Bônus de Velocidade + Bônus de Combo (50 pts por acerto seguido)
+    const speedBonus = state.timeLeft * 10; // Até +200 pts extras por resposta rápida
+    const comboBonus = state.streak * 50;
+    const pointsGained = 200 + speedBonus + comboBonus;
+
     state.score += pointsGained;
     elements.quizScorePill.textContent = `⭐ ${state.score} pts (+${pointsGained})`;
   } else {
     clickedBtn.classList.add('incorrect');
     state.streak = 0;
+    playSynthesizedSound('wrong');
 
-    // Destaca a resposta correta
     const correctBtn = elements.optionsGrid.querySelector(`[data-index="${currentQ.correta}"]`);
-    if (correctBtn) {
-      correctBtn.classList.add('correct');
-    }
+    if (correctBtn) correctBtn.classList.add('correct');
   }
 
-  // Exibe explicação pedagógica
   elements.explanationText.textContent = currentQ.explicacao;
   elements.explanationBox.style.display = 'block';
 
-  // Atualiza botão de próximo
   if (state.quizIndex < state.questions.length - 1) {
     elements.btnNextQuestion.textContent = "Próxima Pergunta ➔";
   } else {
@@ -500,9 +603,10 @@ function advanceQuiz() {
 }
 
 /* ==========================================================================
-   RESULTADO DO QUIZ & INTEGRAÇÃO FIRESTORE
+   RESULTADO DO QUIZ, CONFETES, RELATÓRIO & INTEGRAÇÃO FIRESTORE
    ========================================================================== */
 async function finishQuiz() {
+  stopTimer();
   const total = state.questions.length;
   const accuracyPct = Math.round((state.correctAnswersCount / total) * 100);
 
@@ -510,9 +614,127 @@ async function finishQuiz() {
   elements.resultAccuracy.textContent = `${accuracyPct}%`;
   elements.resultCorrectCount.textContent = `${state.correctAnswersCount}/${total}`;
 
-  // Atualiza status do envio no badge
+  // Dispara confetes se a pontuação for boa (>= 50%)
+  if (accuracyPct >= 50) {
+    launchConfetti();
+    playSynthesizedSound('master');
+  }
+
+  // Gera relatório pedagógico por tópico
+  renderPedagogicalReport();
+
   elements.firestoreStatusBadge.className = 'firestore-status-badge syncing';
   elements.firestoreStatusBadge.innerHTML = '⏳ Enviando pontuação...';
+
+  switchScreen('result-screen');
+
+  const result = await salvarPontuacaoFirestore(state.playerName, state.score);
+
+  if (result.success && !result.isLocal) {
+    elements.firestoreStatusBadge.className = 'firestore-status-badge success';
+    elements.firestoreStatusBadge.innerHTML = '🔥 Pontuação enviada ao Firebase Firestore!';
+  } else {
+    elements.firestoreStatusBadge.className = 'firestore-status-badge local';
+    elements.firestoreStatusBadge.innerHTML = '💾 Salvo no Ranking Demonstrativo Local';
+  }
+}
+
+/* Gera Relatório Pedagógico em HTML */
+function renderPedagogicalReport() {
+  const container = document.getElementById('report-list-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  state.userAnswers.forEach((ans, i) => {
+    const item = document.createElement('div');
+    item.className = `report-item ${ans.isCorrect ? 'mastered' : 'review'}`;
+    item.innerHTML = `
+      <div>
+        <strong>Questão ${i + 1}:</strong> ${ans.isCorrect ? '✅ Conceito Dominado' : '⚠️ Recomenda-se Revisar'}
+        <div style="color: var(--text-muted); font-size: 0.82rem; margin-top: 0.2rem;">${ans.question}</div>
+      </div>
+    `;
+    container.appendChild(item);
+  });
+}
+
+/* Abre Modal do Certificado Acadêmico */
+function openCertificateModal() {
+  const modal = document.getElementById('certificate-modal');
+  const nameEl = document.getElementById('cert-player-name');
+  const scoreEl = document.getElementById('cert-player-score');
+  const accEl = document.getElementById('cert-player-accuracy');
+  const dateEl = document.getElementById('cert-date');
+
+  const total = state.questions.length;
+  const accuracyPct = Math.round((state.correctAnswersCount / total) * 100);
+
+  if (nameEl) nameEl.textContent = state.playerName || 'Estudante Pesquisador';
+  if (scoreEl) scoreEl.textContent = `${state.score} pts`;
+  if (accEl) accEl.textContent = `${accuracyPct}%`;
+  if (dateEl) dateEl.textContent = new Date().toLocaleDateString('pt-BR');
+
+  if (modal) modal.classList.add('active');
+}
+
+/* Animação de Confetes por Canvas 2D */
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const particles = [];
+  const colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ec4899', '#ffffff'];
+
+  for (let i = 0; i < 140; i++) {
+    particles.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 16,
+      vy: (Math.random() - 0.7) * 16,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * Math.PI * 2,
+      vRot: (Math.random() - 0.5) * 0.2,
+      life: 1,
+      decay: Math.random() * 0.015 + 0.008
+    });
+  }
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let active = false;
+
+    particles.forEach(p => {
+      if (p.life > 0) {
+        active = true;
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.25;
+        p.rotation += p.vRot;
+        p.life -= p.decay;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = p.color;
+        ctx.globalAlpha = Math.max(0, p.life);
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+    });
+
+    if (active) {
+      requestAnimationFrame(animate);
+    } else {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+
+  animate();
+}
 
   switchScreen('result-screen');
 

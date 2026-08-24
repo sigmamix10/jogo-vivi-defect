@@ -23,12 +23,14 @@ Um aplicativo web interativo, lúdico e acessível desenvolvido no **Antigravity
 
 ## ✨ Recursos Principais
 
-- 🎴 **Modo Estudo (Flashcards 3D):** Cartões ilustrados com efeito de rotação 3D (`rotateY`), cores temáticas vibrantes e botão lúdico *"Marcar como Aprendido"*.
-- ⚡ **Modo Desafio (Quiz Interativo):** Jogo de 6 perguntas com feedback visual imediato (verde/vermelho), sistema de multiplicador por combo de acertos e explicações pedagógicas detalhadas.
-- 🏆 **Ranking em Tempo Real (Leaderboard):** Tabela do Top 10 maiores pontuadores integrada ao **Firebase Firestore**, com suporte a fallback de armazenamento local.
-- 🔊 **Leitura em Voz Alta (Web Speech API):** Narração por voz nativa em português para frente e verso dos cartões e perguntas.
-- 🤟 **Tradução em LIBRAS (VLibras):** Widget do governo integrado com avatar 3D que sinaliza em Língua Brasileira de Sinais todo o conteúdo textual.
-- 🎵 **Sons Sintetizados (Web Audio API):** Efeitos sonoros de virar cartão e conquista de aprendizado sem dependência de arquivos externos.
+- 🎴 **Modo Estudo (Flashcards 3D):** Cartões ilustrados com efeito de rotação 3D (`rotateY`), cores temáticas vibrantes, áudio narração e botão lúdico *"Marcar como Aprendido"*.
+- ⚡ **Modo Desafio (Quiz Interativo com Temporizador):** Jogo de 6 perguntas com temporizador de 20s, bônus de velocidade, multiplicador por combo de acertos e explicações pedagógicas.
+- 🎉 **Efeito de Confetes & Celebrativo:** Animação de confetes em Canvas 2D ao concluir o Quiz com bom desempenho.
+- 📜 **Certificado Acadêmico Digital:** Emissão de certificado em PDF/Impressão personalizado com nome do jogador, pontuação e data.
+- 📊 **Relatório Pedagógico de Desempenho:** Diagnóstico ao final do Quiz indicando tópicos dominados vs. tópicos recomendados para revisão.
+- 🏆 **Ranking em Tempo Real (Leaderboard):** Tabela do Top 10 maiores pontuadores integrada ao **Firebase Firestore**.
+- 🔊 **Leitura em Voz Alta & Controle de Áudio:** Narração sintetizada (Web Speech API) e botão Mute/Unmute no cabeçalho.
+- 🤟 **Tradução em LIBRAS (VLibras):** Widget com avatar 3D que traduz em sinais todo o conteúdo do aplicativo.
 
 ---
 
