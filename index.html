@@ -69,7 +69,7 @@
             Testes seus conhecimentos sobre compensação social, ZDP, mediação pedagógica e caminhos alternativos através de Flashcards 3D e Quiz interativo com Ranking!
           </p>
 
-          <form id="welcome-form">
+          <form id="welcome-form" onsubmit="event.preventDefault();">
             <div class="form-group">
               <label for="player-name-input" class="form-label">Digite seu Nome ou Apelido para jogar:</label>
               <input 
@@ -83,7 +83,7 @@
               >
             </div>
 
-            <button type="submit" class="btn btn-primary btn-full">
+            <button type="button" id="btn-start-game" class="btn btn-primary btn-full">
               🚀 Iniciar Jogo
             </button>
           </form>

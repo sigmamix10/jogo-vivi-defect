@@ -103,29 +103,35 @@ document.addEventListener('DOMContentLoaded', () => {
   checkSavedPlayer();
 });
 
-function initEventListeners() {
-  // Form de Boas-Vindas
-  elements.welcomeForm.addEventListener('submit', (e) => {
+function handleStartGame(e) {
+  if (e) {
     e.preventDefault();
-    const name = elements.playerNameInput.value.trim();
-    if (name) {
-      setPlayerName(name);
-      switchScreen('mode-screen');
-    }
-  });
+    if (e.stopPropagation) e.stopPropagation();
+  }
+  const input = document.getElementById('player-name-input');
+  const name = input ? input.value.trim() : '';
+
+  if (name.length > 0) {
+    setPlayerName(name);
+    switchScreen('mode-screen');
+  } else {
+    alert("Por favor, digite seu nome ou apelido para iniciar!");
+  }
+  return false;
+}
+
+function initEventListeners() {
+  // Form de Boas-Vindas & Botão Iniciar Jogo
+  const form = document.getElementById('welcome-form');
+  const btnStart = document.getElementById('btn-start-game');
+
+  if (form) form.onsubmit = handleStartGame;
+  if (btnStart) btnStart.onclick = handleStartGame;
 
   // Botões de Seleção de Modo
-  elements.btnGoStudy.addEventListener('click', () => {
-    startStudyMode();
-  });
-
-  elements.btnGoQuiz.addEventListener('click', () => {
-    startQuizMode();
-  });
-
-  elements.btnGoRanking.addEventListener('click', () => {
-    loadAndShowRanking();
-  });
+  if (elements.btnGoStudy) elements.btnGoStudy.addEventListener('click', startStudyMode);
+  if (elements.btnGoQuiz) elements.btnGoQuiz.addEventListener('click', startQuizMode);
+  if (elements.btnGoRanking) elements.btnGoRanking.addEventListener('click', loadAndShowRanking);
 
   if (elements.btnGoHelp) {
     elements.btnGoHelp.addEventListener('click', () => {
@@ -203,26 +209,41 @@ function initEventListeners() {
 // Gestão de Jogador
 function setPlayerName(name) {
   state.playerName = name;
-  localStorage.setItem('vygotsky_player_name', name);
-  elements.headerPlayerName.textContent = name;
-  elements.headerPlayerPill.style.display = 'flex';
-  elements.headerPlayerPill.title = "Clique para trocar de jogador";
-  elements.headerPlayerPill.style.cursor = "pointer";
+  try {
+    localStorage.setItem('vygotsky_player_name', name);
+  } catch (err) {
+    console.warn("LocalStorage indisponível:", err);
+  }
 
-  if (!elements.headerPlayerPill.dataset.hasListener) {
-    elements.headerPlayerPill.addEventListener('click', () => {
-      if (confirm(`Deseja alterar o jogador atual ("${state.playerName}")?`)) {
-        switchScreen('welcome-screen');
-      }
-    });
-    elements.headerPlayerPill.dataset.hasListener = "true";
+  const headerName = document.getElementById('header-player-name');
+  const headerPill = document.getElementById('header-player-pill');
+
+  if (headerName) headerName.textContent = name;
+  if (headerPill) {
+    headerPill.style.display = 'flex';
+    headerPill.title = "Clique para trocar de jogador";
+    headerPill.style.cursor = "pointer";
+
+    if (!headerPill.dataset.hasListener) {
+      headerPill.addEventListener('click', () => {
+        if (confirm(`Deseja alterar o jogador atual ("${state.playerName}")?`)) {
+          switchScreen('welcome-screen');
+        }
+      });
+      headerPill.dataset.hasListener = "true";
+    }
   }
 }
 
 function checkSavedPlayer() {
-  const saved = localStorage.getItem('vygotsky_player_name');
-  if (saved) {
-    elements.playerNameInput.value = saved;
+  try {
+    const saved = localStorage.getItem('vygotsky_player_name');
+    const input = document.getElementById('player-name-input');
+    if (saved && input) {
+      input.value = saved;
+    }
+  } catch (err) {
+    // LocalStorage fallback
   }
 }
 
@@ -745,20 +766,6 @@ function launchConfetti() {
   }
 
   animate();
-}
-
-  switchScreen('result-screen');
-
-  // Envia pontuação ao Firestore
-  const result = await salvarPontuacaoFirestore(state.playerName, state.score);
-
-  if (result.success && !result.isLocal) {
-    elements.firestoreStatusBadge.className = 'firestore-status-badge success';
-    elements.firestoreStatusBadge.innerHTML = '🔥 Pontuação enviada ao Firebase Firestore!';
-  } else {
-    elements.firestoreStatusBadge.className = 'firestore-status-badge local';
-    elements.firestoreStatusBadge.innerHTML = '💾 Salvo no Ranking Demonstrativo Local';
-  }
 }
 
 /* ==========================================================================
