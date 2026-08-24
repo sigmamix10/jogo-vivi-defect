@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vygotsky & Defectologia | Flashcards & Quiz Interativo</title>
+  <meta name="description" content="Aplicativo interativo de estudo e quiz sobre a Teoria Defectológica de Vygotsky com ranking em tempo real no Firebase Firestore.">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Estilos Customizados -->
+  <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+
+  <!-- Brilhos Decorativos de Fundo -->
+  <div class="bg-glow-1"></div>
+  <div class="bg-glow-2"></div>
+
+  <div id="app-root">
+    
+    <!-- Cabeçalho Principal -->
+    <header class="app-header">
+      <div class="brand-badge">
+        <div class="brand-icon">🧠</div>
+        <div class="brand-title">
+          <h1>Vygotsky & Defectologia</h1>
+          <span class="brand-subtitle">Psicologia & Educação Especial</span>
+        </div>
+      </div>
+
+      <!-- Badge de Identificação do Jogador (Escondido inicialmente) -->
+      <div id="header-player-pill" class="player-info-pill" style="display: none;">
+        <span>👤</span>
+        <span id="header-player-name">Jogador</span>
+      </div>
+    </header>
+
+    <!-- Container Principal de Telas (SPA) -->
+    <main class="screen-container">
+
+      <!-- ===================================================================
+           1. TELA DE BOAS-VINDAS (WELCOME SCREEN)
+           =================================================================== -->
+      <section id="welcome-screen" class="screen active">
+        <div class="glass-card welcome-box">
+          <div class="theory-tag">
+            <span>✨</span> Teoria Histórico-Cultural
+          </div>
+
+          <h2 class="welcome-title">
+            Explore a <span class="text-gradient">Defectologia Moderna</span> de Vygotsky
+          </h2>
+
+          <p class="welcome-desc">
+            Testes seus conhecimentos sobre compensação social, ZDP, mediação pedagógica e caminhos alternativos através de Flashcards 3D e Quiz interativo com Ranking!
+          </p>
+
+          <form id="welcome-form">
+            <div class="form-group">
+              <label for="player-name-input" class="form-label">Digite seu Nome ou Apelido para jogar:</label>
+              <input 
+                type="text" 
+                id="player-name-input" 
+                class="input-field" 
+                placeholder="Ex: Profª Ana, Gabriel, etc." 
+                required 
+                maxlength="25"
+                autocomplete="off"
+              >
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">
+              🚀 Iniciar Jogo
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           2. TELA DE SELEÇÃO DE MODO (MODE SCREEN)
+           =================================================================== -->
+      <section id="mode-screen" class="screen">
+        <div class="mode-header">
+          <h2>Escolha o Modo de Jogo</h2>
+          <p style="color: var(--text-muted);">Selecione se deseja estudar os conceitos ou aceitar o desafio do Quiz</p>
+        </div>
+
+        <div class="mode-grid">
+          <!-- Modo Estudo -->
+          <div id="btn-go-study" class="mode-card study">
+            <div class="mode-icon">🎴</div>
+            <h3>Modo Estudo</h3>
+            <p>Interaja com os cartões 3D, clique para virar e revise a teoria defectológica vygotskyana no seu próprio ritmo.</p>
+            <div class="mode-action">
+              <span>Acessar Flashcards</span> ➔
+            </div>
+          </div>
+
+          <!-- Modo Desafio -->
+          <div id="btn-go-quiz" class="mode-card quiz">
+            <div class="mode-icon">⚡</div>
+            <h3>Modo Desafio (Quiz)</h3>
+            <p>Responda às perguntas baseadas nos conceitos, acumule pontos por velocidade e acertos e entre para o Top 10!</p>
+            <div class="mode-action">
+              <span>Iniciar Quiz</span> ➔
+            </div>
+          </div>
+
+          <!-- Leaderboard / Ranking -->
+          <div id="btn-go-ranking" class="mode-card leaderboard">
+            <div class="mode-icon">🏆</div>
+            <h3>Ranking dos Jogadores</h3>
+            <p>Veja o Top 10 de maiores pontuações puxadas em tempo real do banco de dados Firebase Firestore.</p>
+            <div class="mode-action">
+              <span>Ver Leaderboard</span> ➔
+            </div>
+          </div>
+
+          <!-- Guia de Ajuda -->
+          <div id="btn-go-help" class="mode-card help">
+            <div class="mode-icon">❓</div>
+            <h3>Guia de Ajuda & Regras</h3>
+            <p>Aprenda as regras do jogo, atalhos de teclado, recursos de acessibilidade em LIBRAS/Voz e teoria de Vygotsky.</p>
+            <div class="mode-action">
+              <span>Abrir Guia de Ajuda</span> ➔
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           3. MODO ESTUDO - FLASHCARDS 3D (STUDY SCREEN)
+           =================================================================== -->
+      <section id="study-screen" class="screen">
+        <div class="study-topbar">
+          <div id="card-counter" class="card-counter">1 / 5</div>
+          <div id="mastered-counter" class="mastered-badge">
+            🌟 0/5 Aprendidos
+          </div>
+          <button id="btn-speak-card" class="btn-audio-speak" title="Ouvir Narração em Voz Alta (Acessibilidade)" aria-label="Ouvir texto em voz alta">
+            🔊 Ouvir Texto
+          </button>
+        </div>
+
+        <!-- Componente 3D Card Flip com Suporte a Leitor de Tela -->
+        <div id="flashcard-wrapper" class="flashcard-wrapper" tabindex="0" role="region" aria-live="polite" aria-label="Cartão de Estudo 3D. Pressione Espaço ou Enter para virar o cartão.">
+          <div class="flashcard-inner">
+            
+            <!-- Frente do Cartão -->
+            <div class="card-face card-face-front">
+              <div class="card-face-header">
+                <span id="card-category" class="card-category-badge">Conceito</span>
+                <span id="card-emoji-front" class="card-emoji-icon">🧠</span>
+              </div>
+
+              <div class="card-content-center">
+                <h3 id="card-title-front" class="card-title">Defectologia Antiga vs. Moderna</h3>
+                <p id="card-text-front" class="card-text">O que diferencia a defectologia clássica da proposta por Vygotsky?</p>
+              </div>
+
+              <div class="card-footer-tip">
+                <span>🔄</span> Clique para ver a resposta
+              </div>
+            </div>
+
+            <!-- Verso do Cartão -->
+            <div class="card-face card-face-back">
+              <div class="card-face-header">
+                <span class="card-category-badge" style="color: var(--primary-light);">Definição & Teoria</span>
+                <span id="card-emoji-back" class="card-emoji-icon">🧠</span>
+              </div>
+
+              <div class="card-content-center">
+                <h3 id="card-title-back" class="card-title">Defectologia Antiga vs. Moderna</h3>
+                <p id="card-text-back" class="card-text">A antiga focava na biologia e na limitação ("menos-valia" quantitativa)...</p>
+              </div>
+
+              <div class="card-footer-tip">
+                <span>↩️</span> Clique para voltar à frente
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Botão de Marcação Lúdica "Aprendido!" -->
+        <div style="text-align: center; margin-bottom: 1.5rem;">
+          <button id="btn-master-card" class="btn btn-master">
+            ⭐ Marcar como Aprendido!
+          </button>
+        </div>
+
+        <!-- Navegação dos Flashcards -->
+        <div class="flashcard-nav">
+          <button id="btn-prev-card" class="btn btn-secondary">
+            ⬅️ Anterior
+          </button>
+          
+          <button id="btn-flip-card" class="btn btn-accent">
+            🔄 Virar Cartão
+          </button>
+          
+          <button id="btn-next-card" class="btn btn-secondary">
+            Próximo ➡️
+          </button>
+        </div>
+
+        <div style="text-align: center; margin-top: 2rem;">
+          <button id="btn-finish-study" class="btn btn-secondary" style="font-size: 0.9rem;">
+            🏠 Voltar ao Menu Principal
+          </button>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           4. MODO DESAFIO - QUIZ (QUIZ SCREEN)
+           =================================================================== -->
+      <section id="quiz-screen" class="screen">
+        <div class="quiz-topbar">
+          <span id="quiz-question-number" style="font-weight: 700; color: var(--text-muted);">Questão 1/5</span>
+          <div id="quiz-score-pill" class="quiz-score-pill">
+            ⭐ 0 pts
+          </div>
+        </div>
+
+        <div class="quiz-progress-bar">
+          <div id="quiz-progress-fill" class="quiz-progress-fill"></div>
+        </div>
+
+        <div class="glass-card quiz-card">
+          <h3 id="quiz-question-text" class="quiz-question">Pergunta do Quiz...</h3>
+
+          <!-- Grid de Opções -->
+          <div id="options-grid" class="options-grid">
+            <!-- Opções inseridas via JS -->
+          </div>
+
+          <!-- Caixa de Explicação Imediata -->
+          <div id="explanation-box" class="explanation-box">
+            <div class="explanation-title">
+              <span>💡</span> Explicação Pedagógica
+            </div>
+            <p id="explanation-text" class="explanation-text"></p>
+          </div>
+
+          <div style="margin-top: 1.5rem; text-align: right;">
+            <button id="btn-next-question" class="btn btn-primary" style="display: none;">
+              Próxima Pergunta ➔
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           5. RESULTADO DO QUIZ (RESULT SCREEN)
+           =================================================================== -->
+      <section id="result-screen" class="screen">
+        <div class="glass-card result-box">
+          <div class="result-trophy">🏆</div>
+          <h2 class="result-title">Quiz Concluído!</h2>
+          <p style="color: var(--text-muted);">Confira seu desempenho na teoria defectológica:</p>
+
+          <div id="result-score-display" class="result-score-display">
+            0 pts
+          </div>
+
+          <div class="result-stats-grid">
+            <div class="stat-card">
+              <div id="result-accuracy" class="stat-value">0%</div>
+              <div class="stat-label">Precisão de Acertos</div>
+            </div>
+            <div class="stat-card">
+              <div id="result-correct-count" class="stat-value">0/5</div>
+              <div class="stat-label">Questões Corretas</div>
+            </div>
+          </div>
+
+          <!-- Badge do Envio ao Firebase -->
+          <div id="firestore-status-badge" class="firestore-status-badge syncing">
+            ⏳ Enviando pontuação ao Firebase...
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem;">
+            <button id="btn-view-ranking-from-result" class="btn btn-primary btn-full">
+              🏆 Ver Ranking dos Jogadores
+            </button>
+            
+            <div style="display: flex; gap: 0.8rem;">
+              <button id="btn-restart-quiz" class="btn btn-accent" style="flex: 1;">
+                🔄 Tentar Novamente
+              </button>
+              <button id="btn-return-menu-from-result" class="btn btn-secondary" style="flex: 1;">
+                🏠 Menu Principal
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           6. TELA DE RANKING / LEADERBOARD (RANKING SCREEN)
+           =================================================================== -->
+      <section id="ranking-screen" class="screen">
+        <div class="glass-card leaderboard-box">
+          
+          <div class="leaderboard-header">
+            <div class="leaderboard-title">
+              <h2>🏆 Top 10 Ranking</h2>
+              <p style="color: var(--text-muted); font-size: 0.9rem;">Maiores pontuadores no Quiz Defectológico</p>
+            </div>
+            <button id="btn-refresh-ranking" class="btn btn-secondary" style="padding: 0.5rem 0.9rem; font-size: 0.85rem;">
+              🔄 Atualizar
+            </button>
+          </div>
+
+          <!-- Banner Informativo quando o Firebase não possui chaves preenchidas -->
+          <div id="firebase-notice-banner" class="db-notice-banner" style="display: none;">
+            <span style="font-size: 1.2rem;">ℹ️</span>
+            <div>
+              <strong>Modo Demonstrativo (Local):</strong> As credenciais do Firebase ainda não foram inseridas no arquivo <code>js/firebase-config.js</code>. Insira sua <code>apiKey</code> e <code>projectId</code> para habilitar o banco Firestore em tempo real!
+            </div>
+          </div>
+
+          <!-- Lista do Ranking -->
+          <div id="ranking-list-container" class="leaderboard-list">
+            <!-- Carregado via JS -->
+          </div>
+
+      <!-- ===================================================================
+           7. TELA DE AJUDA & INSTRUÇÕES (HELP SCREEN)
+           =================================================================== -->
+      <section id="help-screen" class="screen">
+        <div class="glass-card help-box" style="max-width: 800px; margin: 0 auto;">
+          <div class="help-header" style="text-align: center; margin-bottom: 2rem;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">📖</div>
+            <h2 style="font-family: var(--font-heading); font-size: 2rem; font-weight: 800;">Central de Ajuda & Guia do Jogo</h2>
+            <p style="color: var(--text-muted);">Tudo o que você precisa saber sobre as regras, acessibilidade e teoria de Vygotsky</p>
+          </div>
+
+          <div class="help-sections-grid" style="display: flex; flex-direction: column; gap: 1.5rem; margin-bottom: 2rem;">
+            
+            <!-- Seção 1: Modos de Jogo -->
+            <div class="help-card-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
+              <h3 style="font-family: var(--font-heading); color: var(--accent-cyan); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                🎮 Modos de Jogo
+              </h3>
+              <ul style="color: var(--text-muted); padding-left: 1.2rem; line-height: 1.7;">
+                <li><strong>Modo Estudo (Flashcards 3D):</strong> Revise os 5 conceitos centrais de Vygotsky. Clique no cartão ou pressione <kbd>Espaço</kbd> para virar 3D. Use o botão 🌟 <em>"Marcar como Aprendido"</em> para acompanhar seu progresso.</li>
+                <li><strong>Modo Desafio (Quiz):</strong> Um jogo de 6 perguntas com múltipla escolha. Acertar perguntas consecutivas ativa o <strong>Bônus de Combo 🔥</strong> (+50 pts acumulativos por sequência)!</li>
+              </ul>
+            </div>
+
+            <!-- Seção 2: Acessibilidade -->
+            <div class="help-card-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
+              <h3 style="font-family: var(--font-heading); color: var(--primary-light); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                ♿ Recursos de Acessibilidade
+              </h3>
+              <ul style="color: var(--text-muted); padding-left: 1.2rem; line-height: 1.7;">
+                <li><strong>🔊 Narração em Voz Alta (Web Speech API):</strong> No Modo Estudo, clique no botão <code>🔊 Ouvir Texto</code> no topo para ouvir a leitura sintetizada em Português.</li>
+                <li><strong>🤟 Tradução em LIBRAS (VLibras):</strong> Clique no ícone azul flutuante no canto da tela para ativar o avatar 3D que sinaliza todos os textos em Língua Brasileira de Sinais.</li>
+                <li><strong>🔊 Efeitos Sonoros Sintetizados:</strong> Sons agradáveis ao girar cartões e ao marcar conceitos como aprendidos.</li>
+              </ul>
+            </div>
+
+            <!-- Seção 3: Teclas de Atalho -->
+            <div class="help-card-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
+              <h3 style="font-family: var(--font-heading); color: var(--accent-amber); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                ⌨️ Teclas de Atalho do Teclado
+              </h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.75rem; color: var(--text-muted); font-size: 0.9rem;">
+                <div><kbd style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">Espaço</kbd> / <kbd style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">Enter</kbd> : Virar Cartão 3D</div>
+                <div><kbd style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">Seta Esquerda ⬅️</kbd> : Cartão Anterior</div>
+                <div><kbd style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">Seta Direita ➡️</kbd> : Próximo Cartão</div>
+                <div><kbd style="background: rgba(255,255,255,0.1); padding: 0.2rem 0.5rem; border-radius: 4px;">TAB</kbd> : Navegar por Foco Visível</div>
+              </div>
+            </div>
+
+            <!-- Seção 4: Teoria de Vygotsky -->
+            <div class="help-card-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
+              <h3 style="font-family: var(--font-heading); color: var(--accent-emerald); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                📚 Resumo da Defectologia Vygotskyana
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.6;">
+                Lev Vygotsky rompeu com a defectologia antiga ao defender que a pessoa com deficiência não é "menos desenvolvida", mas sim desenvolvida de forma <strong>qualitativamente diferente</strong>. A deficiência estimula a <strong>compensação social</strong> através de <strong>caminhos alternativos culturais</strong> (como Braille e LIBRAS) e da atuação do professor na <strong>Zona de Desenvolvimento Proximal (ZDP)</strong>.
+              </p>
+            </div>
+
+            <!-- Seção 5: Referência Acadêmica -->
+            <div class="help-card-item" style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1.25rem;">
+              <h3 style="font-family: var(--font-heading); color: var(--primary-light); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                📄 Referência Bibliográfica
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; line-height: 1.6;">
+                RUPPEL, Cristiane; HANSEL, Ana Flávia; RIBEIRO, Lucimare. <strong>Vygotsky e a defectologia: contribuições para a educação dos estudantes com deficiência nos dias atuais</strong>. <em>Revista Diálogos e Perspectivas em Educação Especial</em>, Marília, SP, v. 8, n. 1, p. 11–24, 2021. DOI: <a href="https://doi.org/10.36311/2358-8845.2021.v8n1.p11-24" target="_blank" style="color: var(--accent-cyan);">10.36311/2358-8845.2021.v8n1.p11-24</a>.
+              </p>
+            </div>
+
+          </div>
+
+          <button id="btn-back-to-menu-from-help" class="btn btn-secondary btn-full">
+            ⬅️ Voltar ao Menu Principal
+          </button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="app-footer">
+      <p>Desenvolvido com base no conceito histórico-cultural de <strong>Lev Vygotsky</strong> (1896–1934).</p>
+      <p style="font-size: 0.78rem; color: var(--text-dim); margin-top: 0.4rem;">
+        Referência: RUPPEL, C.; HANSEL, A. F.; RIBEIRO, L. Vygotsky e a defectologia... <em>Rev. Diálogos e Perspectivas em Ed. Especial</em>, 2021.
+      </p>
+    </footer>
+
+  </div>
+
+  <!-- Widget de Acessibilidade VLibras (Tradução em LIBRAS) -->
+  <div vw class="enabled">
+    <div vw-access-button class="active"></div>
+    <div vw-plugin-wrapper>
+      <div class="vw-plugin-top-wrapper"></div>
+    </div>
+  </div>
+  <script src="https://vlibras.gov.br/app/vlibras-plugin.js"></script>
+  <script>
+    new window.VLibras.Widget('https://vlibras.gov.br/app');
+  </script>
+
+  <!-- Carregamento Modular da Aplicação -->
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
