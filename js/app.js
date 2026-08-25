@@ -28,6 +28,7 @@ const state = {
   selectedOption: null,
   isAnswered: false,
   questions: [],
+  seenQuestionIds: new Set(),
   userAnswers: [], // Histórico pedagógico { question, selected, correct, isCorrect }
   timeLeft: 180,
   timerInterval: null
@@ -80,6 +81,7 @@ const elements = {
   explanationText: document.getElementById('explanation-text'),
   btnNextQuestion: document.getElementById('btn-next-question'),
   btnSubmitAnswer: document.getElementById('btn-submit-answer'),
+  btnSpeakQuestion: document.getElementById('btn-speak-question'),
 
   // Resultado Quiz
   resultScoreDisplay: document.getElementById('result-score-display'),
@@ -182,6 +184,7 @@ function initEventListeners() {
   });
 
   // Quiz
+  if (elements.btnSpeakQuestion) elements.btnSpeakQuestion.addEventListener('click', speakCurrentQuestionText);
   if (elements.btnSubmitAnswer) elements.btnSubmitAnswer.addEventListener('click', confirmAnswer);
   elements.btnNextQuestion.addEventListener('click', advanceQuiz);
 
@@ -251,6 +254,7 @@ function checkSavedPlayer() {
 
 // Troca de Telas
 function switchScreen(screenId) {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   state.currentScreen = screenId;
   const screens = document.querySelectorAll('.screen');
   screens.forEach(screen => {
@@ -342,6 +346,11 @@ function speakCurrentCardText() {
     return;
   }
 
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    return;
+  }
+
   window.speechSynthesis.cancel();
 
   const card = flashcardsData[state.flashcardIndex];
@@ -352,6 +361,36 @@ function speakCurrentCardText() {
   const utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.lang = 'pt-BR';
   utterance.rate = 0.95;
+
+  window.speechSynthesis.speak(utterance);
+}
+
+function speakCurrentQuestionText() {
+  if (!('speechSynthesis' in window)) {
+    alert("Seu navegador não possui suporte nativo à leitura por voz.");
+    return;
+  }
+
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const currentQ = state.questions[state.quizIndex];
+  if (!currentQ) return;
+
+  const letters = ['A', 'B', 'C', 'D'];
+  const optionsText = currentQ.opcoes
+    .map((opcao, index) => `Alternativa ${letters[index]}: ${opcao}`)
+    .join('. ');
+
+  const textToSpeak = `Pergunta: ${currentQ.pergunta}. ${optionsText}`;
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
+  utterance.lang = 'pt-BR';
+  utterance.rate = 0.92;
 
   window.speechSynthesis.speak(utterance);
 }
@@ -471,13 +510,33 @@ function startQuizMode() {
   state.correctAnswersCount = 0;
   state.streak = 0;
   state.userAnswers = [];
-  state.questions = [...quizQuestions].sort(() => Math.random() - 0.5);
+
+  if (!state.seenQuestionIds) {
+    state.seenQuestionIds = new Set();
+  }
+
+  // Filtrar perguntas ainda não vistas no ciclo atual de tentativas
+  let unseen = quizQuestions.filter(q => !state.seenQuestionIds.has(q.id));
+
+  // Se restarem menos de 5 perguntas não vistas, reinicia o ciclo para reutilizar o banco completo (26 questões)
+  if (unseen.length < 5) {
+    state.seenQuestionIds.clear();
+    unseen = [...quizQuestions];
+  }
+
+  // Embaralhar e selecionar exatamente 5 perguntas aleatórias
+  const shuffled = [...unseen].sort(() => Math.random() - 0.5);
+  state.questions = shuffled.slice(0, 5);
+
+  // Registrar as 5 perguntas selecionadas como vistas
+  state.questions.forEach(q => state.seenQuestionIds.add(q.id));
 
   renderQuizQuestion();
   switchScreen('quiz-screen');
 }
 
 function renderQuizQuestion() {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   state.isAnswered = false;
   state.selectedOption = null;
 

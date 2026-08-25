@@ -415,7 +415,8 @@ html, body {
 /* ==========================================================================
    3. MODO ESTUDO - FLASHCARDS 3D (FLASHCARD SCREEN)
    ========================================================================== */
-.study-topbar {
+.study-topbar,
+.quiz-topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;

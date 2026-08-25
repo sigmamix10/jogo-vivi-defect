@@ -24,7 +24,7 @@ Um aplicativo web interativo, lúdico e acessível desenvolvido no **Antigravity
 ## ✨ Recursos Principais
 
 - 🎴 **Modo Estudo (Flashcards 3D):** Cartões ilustrados com efeito de rotação 3D (`rotateY`), cores temáticas vibrantes, áudio narração e botão lúdico *"Marcar como Aprendido"*.
-- ⚡ **Modo Desafio (Quiz Interativo Acessível):** Jogo de 6 perguntas com temporizador estendido de 3 minutos (180s), botão de confirmação *"Responder"*, bônus de velocidade, multiplicador por combo de acertos e explicações pedagógicas.
+- ⚡ **Modo Desafio (Quiz Interativo Acessível):** Banco de 26 perguntas pedagógicas, apresentando 5 questões sorteadas sem repetição a cada nova tentativa, temporizador estendido de 3 minutos (180s), botão de confirmação *"Responder"*, áudio narração, bônus de velocidade, multiplicador por combo de acertos e explicações pedagógicas.
 - 🎉 **Efeito de Confetes & Celebrativo:** Animação de confetes em Canvas 2D ao concluir o Quiz com bom desempenho.
 - 📜 **Certificado Acadêmico Digital:** Emissão de certificado em PDF/Impressão personalizado com nome do jogador, pontuação e data.
 - 📊 **Relatório Pedagógico de Desempenho:** Diagnóstico ao final do Quiz indicando tópicos dominados vs. tópicos recomendados para revisão.
@@ -69,7 +69,7 @@ O conteúdo pedagógico do aplicativo aborda os 5 pilares centrais da defectolog
 
 | Recurso | Descrição | Como Usar |
 | :--- | :--- | :--- |
-| 🔊 **Narração por Voz** | Leitura sintetizada do texto em voz alta | Clique no botão `🔊 Ouvir Texto` no cartão |
+| 🔊 **Narração por Voz** | Leitura sintetizada da pergunta, alternativas e cartões em voz alta | Clique no botão `🔊 Ouvir Texto` nos cartões ou `🔊 Ouvir Questão` no Quiz |
 | 🤟 **Tradução LIBRAS** | Avatar 3D (VLibras) que traduz em sinais | Clique no ícone azul de acessibilidade no canto da tela |
 | ⌨️ **Navegação por Teclado** | Controle total sem uso do mouse | `Espaço`/`Enter` (virar cartão) \| `Setas` (navegar) |
 | 👁️ **Atributos ARIA** | Compatibilidade com leitores de tela | NVDA, JAWS, VoiceOver e TalkBack suportados |
