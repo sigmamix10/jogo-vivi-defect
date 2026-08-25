@@ -24,7 +24,7 @@ Um aplicativo web interativo, lúdico e acessível desenvolvido no **Antigravity
 ## ✨ Recursos Principais
 
 - 🎴 **Modo Estudo (Flashcards 3D):** Cartões ilustrados com efeito de rotação 3D (`rotateY`), cores temáticas vibrantes, áudio narração e botão lúdico *"Marcar como Aprendido"*.
-- ⚡ **Modo Desafio (Quiz Interativo com Temporizador):** Jogo de 6 perguntas com temporizador de 20s, bônus de velocidade, multiplicador por combo de acertos e explicações pedagógicas.
+- ⚡ **Modo Desafio (Quiz Interativo Acessível):** Jogo de 6 perguntas com temporizador estendido de 3 minutos (180s), botão de confirmação *"Responder"*, bônus de velocidade, multiplicador por combo de acertos e explicações pedagógicas.
 - 🎉 **Efeito de Confetes & Celebrativo:** Animação de confetes em Canvas 2D ao concluir o Quiz com bom desempenho.
 - 📜 **Certificado Acadêmico Digital:** Emissão de certificado em PDF/Impressão personalizado com nome do jogador, pontuação e data.
 - 📊 **Relatório Pedagógico de Desempenho:** Diagnóstico ao final do Quiz indicando tópicos dominados vs. tópicos recomendados para revisão.

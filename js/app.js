@@ -29,7 +29,7 @@ const state = {
   isAnswered: false,
   questions: [],
   userAnswers: [], // Histórico pedagógico { question, selected, correct, isCorrect }
-  timeLeft: 20,
+  timeLeft: 180,
   timerInterval: null
 };
 
@@ -79,6 +79,7 @@ const elements = {
   explanationBox: document.getElementById('explanation-box'),
   explanationText: document.getElementById('explanation-text'),
   btnNextQuestion: document.getElementById('btn-next-question'),
+  btnSubmitAnswer: document.getElementById('btn-submit-answer'),
 
   // Resultado Quiz
   resultScoreDisplay: document.getElementById('result-score-display'),
@@ -181,6 +182,7 @@ function initEventListeners() {
   });
 
   // Quiz
+  if (elements.btnSubmitAnswer) elements.btnSubmitAnswer.addEventListener('click', confirmAnswer);
   elements.btnNextQuestion.addEventListener('click', advanceQuiz);
 
   // Resultado
@@ -490,6 +492,11 @@ function renderQuizQuestion() {
   elements.explanationBox.style.display = 'none';
   elements.btnNextQuestion.style.display = 'none';
 
+  if (elements.btnSubmitAnswer) {
+    elements.btnSubmitAnswer.style.display = 'inline-flex';
+    elements.btnSubmitAnswer.disabled = true;
+  }
+
   elements.optionsGrid.innerHTML = '';
   const letters = ['A', 'B', 'C', 'D'];
 
@@ -503,17 +510,37 @@ function renderQuizQuestion() {
       <span class="option-text">${opcao}</span>
     `;
 
-    btn.addEventListener('click', () => handleOptionClick(index, btn));
+    btn.addEventListener('click', () => selectOption(index));
     elements.optionsGrid.appendChild(btn);
   });
 
   startTimer();
 }
 
-/* Temporizador Regressivo de 20 Segundos */
+function selectOption(selectedIndex) {
+  if (state.isAnswered) return;
+  state.selectedOption = selectedIndex;
+
+  const optionBtns = elements.optionsGrid.querySelectorAll('.option-btn');
+  optionBtns.forEach((btn, idx) => {
+    btn.classList.toggle('selected', idx === selectedIndex);
+  });
+
+  if (elements.btnSubmitAnswer) {
+    elements.btnSubmitAnswer.disabled = false;
+  }
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+
+/* Temporizador Regressivo de 3 Minutos (180 Segundos) */
 function startTimer() {
   stopTimer();
-  state.timeLeft = 20;
+  state.timeLeft = 180;
   updateTimerUI();
 
   state.timerInterval = setInterval(() => {
@@ -538,17 +565,21 @@ function updateTimerUI() {
   const timerDisplay = document.getElementById('timer-display');
   const timerFill = document.getElementById('question-timer-fill');
 
-  if (timerDisplay) timerDisplay.textContent = `${state.timeLeft}s`;
+  if (timerDisplay) timerDisplay.textContent = formatTime(state.timeLeft);
   if (timerFill) {
-    const pct = (state.timeLeft / 20) * 100;
+    const pct = (state.timeLeft / 180) * 100;
     timerFill.style.width = `${pct}%`;
-    timerFill.classList.toggle('warning', state.timeLeft <= 5);
+    timerFill.classList.toggle('warning', state.timeLeft <= 30);
   }
 }
 
 function handleTimeOut() {
   if (state.isAnswered) return;
   state.isAnswered = true;
+
+  if (elements.btnSubmitAnswer) {
+    elements.btnSubmitAnswer.style.display = 'none';
+  }
 
   const currentQ = state.questions[state.quizIndex];
   state.userAnswers.push({
@@ -557,7 +588,10 @@ function handleTimeOut() {
   });
 
   const optionBtns = elements.optionsGrid.querySelectorAll('.option-btn');
-  optionBtns.forEach(btn => btn.disabled = true);
+  optionBtns.forEach(btn => {
+    btn.disabled = true;
+    btn.classList.remove('selected');
+  });
 
   state.streak = 0;
   playSynthesizedSound('wrong');
@@ -576,11 +610,16 @@ function handleTimeOut() {
   elements.btnNextQuestion.style.display = 'inline-flex';
 }
 
-function handleOptionClick(selectedIndex, clickedBtn) {
-  if (state.isAnswered) return;
+function confirmAnswer() {
+  if (state.isAnswered || state.selectedOption === null) return;
   state.isAnswered = true;
   stopTimer();
 
+  if (elements.btnSubmitAnswer) {
+    elements.btnSubmitAnswer.style.display = 'none';
+  }
+
+  const selectedIndex = state.selectedOption;
   const currentQ = state.questions[state.quizIndex];
   const isCorrect = selectedIndex === currentQ.correta;
 
@@ -590,23 +629,28 @@ function handleOptionClick(selectedIndex, clickedBtn) {
   });
 
   const optionBtns = elements.optionsGrid.querySelectorAll('.option-btn');
-  optionBtns.forEach(btn => btn.disabled = true);
+  optionBtns.forEach(btn => {
+    btn.disabled = true;
+    btn.classList.remove('selected');
+  });
+
+  const clickedBtn = elements.optionsGrid.querySelector(`[data-index="${selectedIndex}"]`);
 
   if (isCorrect) {
-    clickedBtn.classList.add('correct');
+    if (clickedBtn) clickedBtn.classList.add('correct');
     state.streak++;
     state.correctAnswersCount++;
     playSynthesizedSound('correct');
     
-    // Pontuação base 200 + Bônus de Velocidade + Bônus de Combo (50 pts por acerto seguido)
-    const speedBonus = state.timeLeft * 10; // Até +200 pts extras por resposta rápida
+    // Pontuação base 200 + Bônus de Velocidade (até +200 com base em 180s) + Bônus de Combo
+    const speedBonus = Math.round((state.timeLeft / 180) * 200);
     const comboBonus = state.streak * 50;
     const pointsGained = 200 + speedBonus + comboBonus;
 
     state.score += pointsGained;
     elements.quizScorePill.textContent = `⭐ ${state.score} pts (+${pointsGained})`;
   } else {
-    clickedBtn.classList.add('incorrect');
+    if (clickedBtn) clickedBtn.classList.add('incorrect');
     state.streak = 0;
     playSynthesizedSound('wrong');
 

@@ -234,7 +234,7 @@
           <span id="quiz-question-number" style="font-weight: 700; color: var(--text-muted);">Questão 1/6</span>
           <div class="timer-container">
             <span>⏱️ Tempo:</span>
-            <span id="timer-display" style="color: var(--accent-cyan);">20s</span>
+            <span id="timer-display" style="color: var(--accent-cyan);">3:00</span>
           </div>
           <div id="quiz-score-pill" class="quiz-score-pill">
             ⭐ 0 pts
@@ -259,18 +259,22 @@
             <!-- Opções inseridas via JS -->
           </div>
 
+          <!-- Ações do Quiz: Botão Responder & Próxima Pergunta -->
+          <div class="quiz-actions" style="margin-top: 1.5rem; text-align: right; display: flex; justify-content: flex-end; gap: 1rem; flex-wrap: wrap;">
+            <button id="btn-submit-answer" class="btn btn-submit-answer" disabled>
+              ✅ Responder
+            </button>
+            <button id="btn-next-question" class="btn btn-primary" style="display: none;">
+              Próxima Pergunta ➔
+            </button>
+          </div>
+
           <!-- Caixa de Explicação Imediata -->
-          <div id="explanation-box" class="explanation-box">
+          <div id="explanation-box" class="explanation-box" style="margin-top: 1.5rem;">
             <div class="explanation-title">
               <span>💡</span> Explicação Pedagógica
             </div>
             <p id="explanation-text" class="explanation-text"></p>
-          </div>
-
-          <div style="margin-top: 1.5rem; text-align: right;">
-            <button id="btn-next-question" class="btn btn-primary" style="display: none;">
-              Próxima Pergunta ➔
-            </button>
           </div>
         </div>
       </section>
